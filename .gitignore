@@ -1,0 +1,14 @@
+.vscode/
+obj/
+bin/
+bulid/
+publish/
+
+extra/
+test/v1/
+
+*.bin
+*.gb
+*.gbc
+
+!fall_back.gb
