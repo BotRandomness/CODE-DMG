@@ -26,7 +26,7 @@
 ## Getting Started
 Want to use it, and mess around? Here's how you can get started!
 ### Download
-1. Download it from here, or on the releases page.
+1. Download it from [here](https://github.com/BotRandomness/CODE-DMG/releases), or on the releases page. (win-x64, win-x86, osx-x64, osx-arm64, linux-x64)
 2. Unzip the folder
 3. Open up your terminal at the download location (Can be ran with CLI only for right now)
 4. Optional: Place the bootrom by the executable. Bootrom file should be named `dmg_boot.bin`
