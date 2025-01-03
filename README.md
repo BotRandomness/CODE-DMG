@@ -245,6 +245,29 @@ Also shoutout to the EmuDev community!
   - Banking mode
 - If you find other bugs/issues, open up a issue in the Issue tab
 
+## Remarks
+```
+ __________________
+|-|--------------|-|
+|  ______________  |
+| |  __________  | |
+| | |          | | |
+| |·|          | | |
+| | |          | | |
+| | |__________| | |
+| |_____________/  |
+|   _  GAMEBOY     |
+| _| |_         () |
+||_   _|       ()  |
+|  |_|             |
+|       / /   \\\ /
+|________________/
+Bot Randomness
+
+^ ASCII Gameboy art I made myself
+Free to use. If used, credit is not needed, but is appreciated :)
+```
+
 ## Contributing
 
 This project is open-source under the MIT License, meaning your free to do what ever you want with it. This project is freely available for anyone to contribute, emulations experts, Nintendo fans, Gameboy lovers, retro enthusiast, or someone who is new to it all.
