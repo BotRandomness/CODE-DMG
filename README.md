@@ -130,7 +130,7 @@ To get started, you need to have dontnet install. For refernce, I used dotnet 6.
 - For other platform, single file, not framework dependent:</br> `dotnet publish -r <RID> --self-contained -o bulid/<RID-Name> /p:PublishSingleFile=true`
 - For other platform, single file, framework dependent:</br> `dotnet publish -r <RID> --no-self-contained -o bulid/<RID-Name> /p:PublishSingleFile=true`
 </br>
-The reason to have both dotnet dependent or not is the file size. If the user already has dotnet, the lighter file size. If the user does not have dotnet, it's more convenient to bundle in the dotnet as self contained even if the file size is larger. It's best to put PublishSingleFile for convenience, especially for self contained dotnet as that will have 224 dll files all in the root of the executable.
+The reason to have both dotnet dependent or not is the file size. If the user already has dotnet, the lighter file size is the best option. If the user does not have dotnet, it's more convenient to bundle in the dotnet as self contained even if the file size is larger. It's best to put PublishSingleFile for convenience, especially for self contained dotnet as that will have 224 dll files all in the root of the executable.
 </br></br>
 For more see the dotnet publish documentation: https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-publish, RID: https://learn.microsoft.com/en-us/dotnet/core/rid-catalog, SingleFile: https://github.com/dotnet/designs/blob/main/accepted/2020/single-file/design.md
 
@@ -223,18 +223,20 @@ CODE-DMG wouldn't be possible without these resources:
 - PanDocs: https://gbdev.io/pandocs/
 - Gbops - The Gameboy Opcodes: https://izik1.github.io/gbops/
 - Wheremyfoodat's logs: https://github.com/wheremyfoodat/Gameboy-logs
-- SingleStemTest JSON Test SM83: https://github.com/SingleStepTests/sm83
+- SingleStepTest JSON Test SM83: https://github.com/SingleStepTests/sm83
 - Rodrigo Copetti's GameBoy Architecture A Practical Analysis: https://www.copetti.org/writings/consoles/game-boy/
 
 These documentations were so useful, I recommend anyone to use them!
 Also shoutout to the EmuDev community! 
 
 ## Upcoming Features
+- [ ] Debugger
+  - VRAM viewer, Memory viewer, step mode
 - [ ] Add MBC2, MBC6, and MBC7
 - [ ] Serial port
-- [ ] Audio
 - [ ] UI
   - Maybe with raygui
+- [ ] Audio
 - Post any feature request in the Issues tab!
 
 ## Known issues
@@ -246,6 +248,9 @@ Also shoutout to the EmuDev community!
 - If you find other bugs/issues, open up a issue in the Issue tab
 
 ## Remarks
+Working on this emulator has been a fun project, to learn about low level system development, and to experiment. I hope this repository can be used by future Gameboy emulation developers as a reference if they get stuck on something. I tried to keep to code as simple and clear as possible, and hope it can help someone else in the future :) </br>
+
+If you are starting out making a Gameboy emulator, this is path I did that worked out for me. To get a base minimum Gameboy system running, I went for running the bootrom. The bootrom is one of the simplest Gameboy program to run. The bootrom only uses 49 opcodes, which is like around 25 general functions (depending how you implement it), and setting a stopping point at `PC:0x100` as that's where the bootroms ends and a ROM would take over. I used [wheremyfoodat's bootrom log](https://github.com/wheremyfoodat/Gameboy-logs) to make sure my bootrom logs matched up with theirs. This allows you set up your base CPU and MMU, and then a PPU with background rendering. This sets up your base emulation system, while having a Gameboy program running and rendering! Then I moved on to focus on the CPU with JSON. Persoanlly, I found it easier to do the JSON test per CPU instruction, than run the Blargg test roms first. Setting up the JSON test is quite easy, just load the register and memory value of the before state in the JSON file, run the instruction, then compare your registers and memory values in the after state in the JSON file. Doing the JSON test is pretty easy and should catch most of the bugs. <em>(Also note the JSON test assume you have a flat 64 KB array, so in my MMU I has 2 modes: One for regular Gameboy operation, and a simple mode for JSON Test)</em> Once the CPU is done, I ran the Blargg individual CPU tests, and pass all of them but one, the `SBC` instruction (Not including interrutpts). Even though the JSON test didn't catch this bug in my `SBC` instruction, it was a really simple zero flag fix I had to do. Then I moved on the PPU using [dmg-acid2](https://github.com/mattcurrie/dmg-acid2) to finish up the PPU. When it comes to interrupts, the only thing needed for most ROMS to run is VBLANK interrupt, and the LCD interrutpt, which is needed to get dmg-acid2 rendering right (It uses the LYC==LY coincidence interrupt). After that, pretty much all MBC0/ROM Only ROMs worked. Then I moved to making the MBCs, which currently I have MBC1, MBC3, and MBC5. I hope reading this little snippet remark and looking through this repository was helpful to someone developing thier own Gameboy emulator. Of course, for the best detailed information, [PanDocs](https://gbdev.io/pandocs/) is really useful. Thank you for reading!  
 ```
  __________________
 |-|--------------|-|
