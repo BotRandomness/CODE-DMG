@@ -126,7 +126,13 @@ To get started, you need to have dontnet install. For refernce, I used dotnet 6.
 3. Run `dotnet run -- --dmg <string:rom>` to compile, and it should run right after!
 
 ### Build
-TODO: Write this part
+- For your own platform, framework dependent: `dotnet publish`
+- For other platform, single file, not framework dependent:</br> `dotnet publish -r <RID> --self-contained -o bulid/<RID-Name> /p:PublishSingleFile=true`
+- For other platform, single file, framework dependent:</br> `dotnet publish -r <RID> --no-self-contained -o bulid/<RID-Name> /p:PublishSingleFile=true`
+</br>
+The reason to have both dotnet dependent or not is the file size. If the user already has dotnet, the lighter file size. If the user does not have dotnet, it's more convenient to bundle in the dotnet as self contained even if the file size is larger. It's best to put PublishSingleFile for convenience, especially for self contained dotnet as that will have 224 dll files all in the root of the executable.
+</br></br>
+For more see the dotnet publish documentation: https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-publish, RID: https://learn.microsoft.com/en-us/dotnet/core/rid-catalog, SingleFile: https://github.com/dotnet/designs/blob/main/accepted/2020/single-file/design.md
 
 ### Program Architechture
 Here's a little information on the program layout!
