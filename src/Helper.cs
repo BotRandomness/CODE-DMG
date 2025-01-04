@@ -141,7 +141,8 @@ class Helper {
                     Console.WriteLine("-h, --help: Shows help screen (What you are reading right now)\n");
                     Console.WriteLine("Pallette names: dmg, cyber, emu, autumn, paris, grayscale, early, crow, coffee, winter");
                     Console.WriteLine("Controls: (A)=Z, (B)=X, [START]=[ENTER], [SELECT]=[RSHIFT], D-Pad=ArrowKeys");
-                    Console.WriteLine("Note: Keep bootrom file (if provided) and fallback rom must be by the excutable or current working directory");
+                    Console.WriteLine("Note: Keep bootrom file (if provided) and fallback rom must be by the excutable!");
+                    Console.WriteLine("Your current working directory must be at the application location when using!");
                     Console.WriteLine("Bootrom is not needed, but it is recommended. It must be named \"dmg_boot.bin\" and be placed in root of executable");
                     Environment.Exit(1);
                 }
