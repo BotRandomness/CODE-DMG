@@ -39,7 +39,7 @@ Want to use it, and mess around? Here's how you can get started!
 - [SELECT] = [RSHIFT]
 - D-Pad = ArrowKeys
 ### Usage
-For the most basics usage: `CODE-DMG --dmg <string:rom>`. Save files are supported (experimental), a `.sav` file will be genarated in the same location as the ROM. This `.sav` file can work between emulators like BGB. Currently CODE-DMG support MBC0/ROM Only roms, as well as experimental MBC1, MBC3 (no RTC), and MB5 (no rumble).
+For the most basics usage: `CODE-DMG --dmg <string:rom>`. Terminal should be at the location of the application as the current working directory when calling `CODE-DMG`. Save files are supported (experimental), a `.sav` file will be genarated in the same location as the ROM. This `.sav` file can work between emulators like BGB. Currently CODE-DMG support MBC0/ROM Only roms, as well as experimental MBC1, MBC3 (no RTC), and MB5 (no rumble).
 #### Flags
 CODE-DMG for now is only runnable through the CLI. Executing the executable directly will rely on the fall back rom. Note: these flags can be passed in any order, and in any combination.
 - `--dmg <string:path>`, `--dmg`: Starts up the emulator given a rom file (Default mode. No rom given, fall back is default)
