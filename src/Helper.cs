@@ -151,6 +151,7 @@ class Helper {
             Console.WriteLine("Error: No mode passed in");
             Console.WriteLine("Mode: --dmg <string:romPath> <optional flags>, --json <xx.json>");
             Console.WriteLine("Use -h or --help to bring up help options. Run in terminal (CLI only for now).");
+            if (!File.Exists(rom)) Environment.Exit(1);
         }
         Console.WriteLine("");
     }
