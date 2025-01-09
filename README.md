@@ -144,7 +144,7 @@ Looking over the code, the program is quite simple, don't worry! This portation 
 C# is a object oriented language. Due to this, we can represent each "component" of the Gameboy as a object. This means we have the following:
 - `CPU.cs`: The 8-bit CPU of the Gameboy (Also can be know as SM83)
 - `PPU.cs`: The PPU of the Gameboy, responsible for changing the mode depending on rendering state, and rendering to screen
-- `MMU.cs`: The Memory Management Unit is reponsible of handling `Read()` and `Write()` to all types memory on the Gameboy, with 16-bit addressing space
+- `MMU.cs`: The Memory Management Unit is responsible of handling `Read()` and `Write()` to all types memory on the Gameboy, with 16-bit addressing space
 - `MBC.cs`: The Memory Bank Controller chip (MBCs) on the cartridge to switch ROM banks and RAM banks to allow ROM size to be greater than 32 KB, and external RAM which be used for save data or extra working RAM
 - `Joypad.cs`: Handles input for the Gameboy
 - `Timer.cs`: The timer component to update timing values
