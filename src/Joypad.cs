@@ -1,23 +1,25 @@
 using Raylib_cs;
 
-class Joypad {
-    private MMU mmu;
+namespace CODE_DMG;
+public class Joypad(Mmu mmu)
+{
+    private readonly Mmu mmu = mmu;
 
-    public Joypad(MMU mmu)
+    private void SetButton(uint button, bool pressed)
     {
-        this.mmu = mmu;
-    }
-
-    private void SetButton(uint button, bool pressed) {
         //0 = pressed, 1 = released
-        if (pressed) {
-            mmu.joypadState &= (byte)~button;
-        } else {
-            mmu.joypadState |= (byte)button;
+        if (pressed)
+        {
+            mmu.JoypadState &= (byte)~button;
+        }
+        else
+        {
+            mmu.JoypadState |= (byte)button;
         }
     }
 
-    public void HandleInput() {
+    public void HandleInput()
+    {
         //Action buttons
         SetButton(0x01, Raylib.IsKeyDown(KeyboardKey.Z)); //A
         SetButton(0x02, Raylib.IsKeyDown(KeyboardKey.X)); //B
