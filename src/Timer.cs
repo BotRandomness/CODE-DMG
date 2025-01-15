@@ -1,19 +1,16 @@
-class Timer {
-    private MMU mmu;
-    
-    int cycles;
+namespace CODE_DMG;
 
-    public Timer(MMU mmu) {
-        this.mmu = mmu;
-        cycles = 0;
-    }
+public class Timer(Mmu mmu)
+{
+    private readonly Mmu mmu = mmu;
 
-    public void Step(int elapsedCycles) {
+    private int cycles;
+
+    public void Step(int elapsedCycles)
+    {
         cycles += elapsedCycles;
-
-        if (cycles >= 256) {
-            cycles -= 256;
-            mmu.DIV++;
-        }
+        if (cycles < 256) return;
+        cycles -= 256;
+        mmu.Div++;
     }
 }
