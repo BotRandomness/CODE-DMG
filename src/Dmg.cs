@@ -49,8 +49,6 @@ public class Dmg
         while (!Raylib.WindowShouldClose())
         {
             Raylib.BeginDrawing();
-            //Raylib.ClearBackground(Color.White);
-
             joypad.HandleInput();
 
             var cycles = 0;

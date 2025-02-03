@@ -8,11 +8,10 @@ public static class Helper
     public static string Bootrom = "dmg_boot.bin";
     private static string _jsonPath = string.Empty;
     public static bool FpsEnable;
-    public static int Mode;
     public static string PaletteName = "dmg";
     public static bool RaylibLog;
     private static readonly Version Version = new(1, 0, 0);
-    public static readonly Dictionary<string, Color[]> Palettes = new() {
+    public static Dictionary<string, Color[]> Palettes = new() {
         {"dmg", [
             new Color(155, 188, 15, 255), //Lightest 
         new Color(139, 172, 15, 255), //Light 
@@ -106,9 +105,8 @@ public static class Helper
                     if (args[i] != args[^1] && args[i + 1].IndexOf('-') != 0)
                     {
                         Rom = args[i + 1];
-                        i += 1;
                     }
-                    Mode = 0;
+
                     if (!File.Exists(Rom))
                     {
                         Console.WriteLine("ROM \"" + Rom + "\" not found!");
@@ -119,14 +117,12 @@ public static class Helper
                 if (args[i] == "--json")
                 {
                     _jsonPath = Path.Combine("test", "v1", args[i + 1]);
-                    Mode = 1;
                     if (!File.Exists(_jsonPath))
                     {
                         Console.WriteLine("JSON Test \"" + args[i + 1] + "\" not found!");
                         Console.WriteLine("Error: Provide Test --json <test>");
                         Environment.Exit(1);
                     }
-                    i += 1;
                 }
                 if (args[i] == "-b" || args[i] == "--bootrom")
                 {
@@ -136,12 +132,10 @@ public static class Helper
                         Console.WriteLine("Error: Custom bootrom file \"" + Bootrom + "\" not found!");
                         Environment.Exit(1);
                     }
-                    i += 1;
                 }
                 if (args[i] == "-s" || args[i] == "--scale")
                 {
                     Scale = int.Parse(args[i + 1]);
-                    i += 1;
                 }
                 if (args[i] == "-f" || args[i] == "--fps")
                 {
@@ -161,7 +155,6 @@ public static class Helper
                             break;
                         }
                     }
-                    i += 1;
                 }
                 if (args[i] == "-v" || args[i] == "--version")
                 {
@@ -210,7 +203,7 @@ public static class Helper
         Console.WriteLine("");
     }
 
-    public static void ASCII_DMG()
+    private static void ASCII_DMG()
     {
         Console.WriteLine(" __________________ ");
         Console.WriteLine("|-|--------------|-|");

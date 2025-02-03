@@ -82,7 +82,7 @@ public class Cpu
         return 0;
     }
 
-    private ushort GetInterruptHandlerAddress(int bit)
+    private static ushort GetInterruptHandlerAddress(int bit)
     {
         return bit switch
         {
@@ -173,9 +173,6 @@ public class Cpu
 
     public int ExecuteInstruction()
     {
-        //Log();
-        //if(PC>= 0x100) {Log();}
-
         var interruptCycles = HandleInterrupts();
         if (interruptCycles > 0) return interruptCycles;
 
@@ -695,10 +692,6 @@ public class Cpu
                 return CP_A_U8();
             case 0xFF:
                 return Rst(0x0038);
-            default:
-            //Console.WriteLine("Unimplemented Opcode: " + opcode.ToString("X2") + " , PC: " + (PC-1).ToString("X4"));
-            //Environment.Exit(1);
-            //return 0;
         }
     }
 
@@ -1220,16 +1213,11 @@ public class Cpu
                 return SET_N_AHL(7);
             case 0xFF:
                 return SET_N_R(7, ref A);
-            default:
-            //Console.WriteLine("Unimplemented CB Opcode: " + suffix.ToString("X2") + " , PC: " + (PC-1).ToString("X4"));
-            //Environment.Exit(1);
-            //return 0;
         }
     }
 
     //R = 8bit reg, RR = 16bit reg, U8 = byte, U16 = ushort, I8, sbyte, AXX = (XX) Value in memory at XX
 
-    //x8 LSM
     private int LD_ARR_R(ref byte r, string regPair)
     {
         var addr = Get16BitReg(regPair);
@@ -1705,8 +1693,6 @@ public class Cpu
     private int XOR_A_R(ref byte r)
     {
         var val = A ^ r;
-
-        //zero = A == 0;
         zero = (val & 0xFF) == 0;
         negative = false;
         halfCarry = false;
@@ -1952,8 +1938,6 @@ public class Cpu
 
     private int ADD_SP_I8()
     {
-        var lower = (byte)(Sp & 0xFF);
-        var high = (byte)((Sp >> 8) & 0xFF);
         var sb = (sbyte)Fetch();
         var result = Sp + (ushort)sb;
 
@@ -2349,7 +2333,7 @@ public class Cpu
         return 12;
     }
 
-    private int RES_N_R(byte n, ref byte r)
+    private static int RES_N_R(byte n, ref byte r)
     {
         var mask = (byte)~(1 << n);
         r &= mask;
@@ -2369,7 +2353,7 @@ public class Cpu
         return 16;
     }
 
-    private int SET_N_R(byte n, ref byte r)
+    private static int SET_N_R(byte n, ref byte r)
     {
         var mask = (byte)(1 << n);
         r |= mask;
@@ -2545,7 +2529,7 @@ public class Cpu
         return 4;
     }
 
-    private int Stop()
+    private static int Stop()
     {
         return 4;
     }

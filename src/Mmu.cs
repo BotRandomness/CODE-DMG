@@ -166,11 +166,6 @@ public class Mmu
 
         return address switch
         {
-            /*
-        if (address < ROM_SIZE) {
-            return rom[address];
-        }
-        */
             >= 0xC000 and < 0xE000 => wram[address - 0xC000],
             >= 0x8000 and < 0xA000 => vram[address - 0x8000],
             >= 0xFE00 and < 0xFEA0 => oam[address - 0xFE00],

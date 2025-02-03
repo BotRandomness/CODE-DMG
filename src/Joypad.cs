@@ -31,7 +31,5 @@ public class Joypad(Mmu mmu)
         SetButton(0x20, Raylib.IsKeyDown(KeyboardKey.Left)); //Left
         SetButton(0x40, Raylib.IsKeyDown(KeyboardKey.Up)); //Up
         SetButton(0x80, Raylib.IsKeyDown(KeyboardKey.Down)); //Down
-
-        //Console.WriteLine(mmu.Read(0xFF00).ToString("X4"));
     }
 }

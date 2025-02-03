@@ -45,15 +45,12 @@ public class Ppu
 
         if ((mmu.Lcdc & 0x80) != 0 && lcdPreviouslyOff)
         {
-            //mode = OAM;
             cycles = 0;
             lcdPreviouslyOff = false;
         }
         else if ((mmu.Lcdc & 0x80) == 0)
         {
             lcdPreviouslyOff = true;
-            //mmu.LY = 0;
-            //mmu.STAT &= 0xFB;
             mode = Hblank;
             return;
         }
@@ -121,13 +118,10 @@ public class Ppu
                 break;
 
             case Vblank:
-                if (!vblankTriggered && mmu.Ly == 144)
+                if (!vblankTriggered && mmu.Ly == 144 && (mmu.Lcdc & 0x80) != 0)
                 {
-                    if ((mmu.Lcdc & 0x80) != 0)
-                    {
-                        mmu.If = (byte)(mmu.If | 0x01);
-                        vblankTriggered = true;
-                    }
+                    mmu.If = (byte)(mmu.If | 0x01);
+                    vblankTriggered = true;
                 }
 
                 if (cycles >= ScanlineCycles)
@@ -255,8 +249,6 @@ public class Ppu
             var bgp = mmu.Bgp;
             var paletteShift = colorBit * 2;
             var paletteColor = (bgp >> paletteShift) & 0b11;
-            //return ConvertPaletteColor(paletteColor);
-
             scanlineBuffer[x] = ConvertPaletteColor(paletteColor);
         }
 
@@ -350,11 +342,10 @@ public class Ppu
     {
         if (mmu.Ly == mmu.Lyc)
         {
-            //Console.WriteLine(mmu.LY);
-            //Set the LYC=LY flag
             mmu.Stat = (byte)(mmu.Stat | 0x04);
             if ((mmu.Stat & 0x40) != 0)
-            {//If the LYC=LY interrupt is enabled set the flag in the IF registers
+            {
+                //If the LYC=LY interrupt is enabled set the flag in the IF registers
                 mmu.If = (byte)(mmu.If | 0x02);
             }
         }
@@ -371,7 +362,6 @@ public class Ppu
             for (var x = 0; x < ScreenWidth; x++)
             {
                 var color = frameBuffer[y * ScreenWidth + x];
-                //Raylib.DrawRectangle(x*2, y*2, 1*2, 1*2, color);
                 Raylib.ImageDrawPixel(ref image, x, y, color);
             }
         }
