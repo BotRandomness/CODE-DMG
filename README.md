@@ -30,14 +30,16 @@ Want to use it, and mess around? Here's how you can get started! </br> </br>
 #### GUI
 1. Download it from [here](https://github.com/BotRandomness/CODE-DMG/releases), or on the releases page. (win-x64, win-x86, osx-x64, osx-arm64, linux-x64)
 2. Unzip the folder
-3. Launch the executable (You may also need to enable execute permission on Unix-like Oses")
-4. You are ready to go!
+3. Launch the executable
+   - On MacOS, there might be a pop up saying "Apple could not verify", this is normal. Simply right click on the app, then open, then open again. You also go to System Settings, then security, then allow. You only need to do this once during the first time. 
+   - You may also need to enable execute permission on "Unix-like Oses"
+5. You are ready to go!
 #### Core
 1. Download it from [here](https://github.com/BotRandomness/CODE-DMG/releases), or on the releases page. (win-x64, win-x86, osx-x64, osx-arm64, linux-x64)
 2. Unzip the folder
 3. Open up your terminal at the download location (Can be ran with CLI only for right now) <strong> Your current working directory must be at the application location when using!</strong>
 4. Optional: Place the bootrom by the executable. Bootrom file should be named `dmg_boot.bin`
-5. Windows: `CODE-DMG --dmg <string:rom>`, Unix-like Oses: `./CODE-DMG --dmg <string:rom>` (You may also need to enable execute permission on Unix-like Oses")
+5. Windows: `CODE-DMG --dmg <string:rom>`, Unix-like Oses: `./CODE-DMG --dmg <string:rom>` (You may also need to enable execute permission on "Unix-like Oses". Signing needed for MacOS use "ad-hoc", GUI version already signed, see Build section for more infomation)
 6. You are ready to go!
 ### Controls
 - (A) = Z
@@ -63,7 +65,7 @@ CODE-DMG flags when using terminal. Note: these flags can be passed in any order
 - `-v`, `--version`: Shows version number
 - `-h`, `--help`: Shows help screen
 #### Bootrom
-The bootrom of the Gameboy is first program that is ran by the Gameboy which sets up register and memory value, and also performs a validity check on the rom. This better known as the Nintendo logo scrolling down when you power on a Gameboy. <strong>Optional, but it is recommended you provide the bootrom.</strong> It must be named `dmg_boot.bin` and be placed in root of executable. <strong>However, even without a bootrom, roms will still work.</strong>
+The bootrom of the Gameboy is first program that is ran by the Gameboy which sets up register and memory value, and also performs a validity check on the rom. This better known as the Nintendo logo scrolling down when you power on a Gameboy. <strong>Optional, but it is recommended you provide the bootrom.</strong> It must be named `dmg_boot.bin` and be placed in root of executable for the Core version. For the GUI version, you can go to `File -> Select BOOTROM` <strong>However, even without a bootrom, roms will still work.</strong>
 
 #### Fallback ROM
 The fallback rom, `fall_back.gb`, is a custom ROM I made in GBZ80 assembly as a fall back rom the emulator can run. This rom purposely has invalid header data, which if provided a bootrom, can emulate what happens when you turn on a Gameboy without a game. If a bootrom is not provided, and the fall back rom is ran, then you will see a screen with a message saying "This should not be seen on a real DMG or emu with bootrom checks"
@@ -133,9 +135,9 @@ To get started, you need to have dontnet install. For reference, I used dotnet 6
 
 1. Download dotnet: https://dotnet.microsoft.com/en-us/
 2. Clone this repository, and point your terminal to the root directory of the repository
-3. Run `dotnet run -- --dmg <string:rom>` to compile, and it should run right after!
+3. Run `dotnet run -- --dmg <string:rom>` to compile, and it should run right after! For the GUI version, doing a `dotnet run` will compile and run right after!
 
-Raylib-cs (the C# binding (made by Chris Dill) for Raylib), does not need to be installed, as dotnet will automatically install any dependences from NuGet. For more information on raylib-cs can be found here on Github: https://github.com/chrisdill/raylib-cs
+Raylib-cs (the C# binding (made by Chris Dill) for Raylib), does not need to be installed, as dotnet will automatically install any dependences from NuGet. For more information on raylib-cs can be found here on Github: https://github.com/chrisdill/raylib-cs. This also applies to [Rlimgui-cs](https://github.com/raylib-extras/rlImGui-cs) and [ImGui.NET](https://github.com/ImGuiNET/ImGui.NET) for the GUI version.
 
 ### Build
 - For your own platform, framework dependent: `dotnet publish`
@@ -144,10 +146,12 @@ Raylib-cs (the C# binding (made by Chris Dill) for Raylib), does not need to be 
 </br>
 The reason to have both dotnet dependent or not is the file size. If the user already has dotnet, the lighter file size is the best option. If the user does not have dotnet, it's more convenient to bundle in the dotnet as self contained even if the file size is larger. It's best to put PublishSingleFile for convenience, especially for self contained dotnet as that will have 224 dll files all in the root of the executable.
 </br></br>
-For more see the dotnet publish documentation: https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-publish, RID: https://learn.microsoft.com/en-us/dotnet/core/rid-catalog, SingleFile: https://github.com/dotnet/designs/blob/main/accepted/2020/single-file/design.md
+For more see the dotnet publish documentation: https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-publish, RID: https://learn.microsoft.com/en-us/dotnet/core/rid-catalog, SingleFile: https://github.com/dotnet/designs/blob/main/accepted/2020/single-file/design.md </br> </br>
+
+For <strong>MacOS</strong>, building requires signing, <em>especially for Apple Silicon</em>. This part is going to be a general note. Dotnet and C# when running and building will automatically sign the binaries with a simple "ad-hoc" (meaning needed or for this) signature. This needs to be done for using and distributing. On other platforms, compiling for Macs would not be signed, since Apple's `codesign` tool is only on Macs <em>(though others have made open source versions of the tool for cross-platform use)</em>. If you have a unsigned binary compiled on a non-Mac platform now on a Mac platform, a simple "ad-hoc" signing will do and can done by `codesign -s - <BinaryPath>`. When it comes `.app` bundles as seen in the GUI version, signing is also required in the same way. You can bulid the `.app` bundle manually since it's just a directory (you can see the GUI version of CODE-DMG as a reference). However, even if the `.app` bundle is made up with already signed binary, you will have to re-sign the <strong>whole</strong> `.app` bundle. This can be done with `codesign --force --deep -s - <AppPath.app>`. 
 
 ### Program Architechture
-Here's a little information on the program layout!
+Here's a little information on the program layout! 
 
 Looking over the code, the program is quite simple, don't worry! This portation was written to be simple, so no matter of your skill level, anybody should get the idea of the program works, it's sort of the reason why I write these parts! :)
 
