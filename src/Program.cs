@@ -1,17 +1,30 @@
-﻿class Program {
+﻿using Raylib_cs;
+using rlImGui_cs;
+using ImGuiNET;
+
+class Program {
     public static void Main(string[] args) {
-        Console.WriteLine("CODE-DMG");
+        Raylib.SetConfigFlags(ConfigFlags.Msaa4xHint | ConfigFlags.VSyncHint | ConfigFlags.ResizableWindow);
+        Raylib.InitWindow(1280, 800, "DMG");
+        Raylib.SetTargetFPS(60);
 
-        Helper.Flags(args);
+        rlImGui.Setup(true);
 
-        if (Helper.mode == 0) {
-            DMG dmg = new DMG(Helper.rom, Helper.bootrom);
+        ImGui.GetIO().ConfigFlags |= ImGuiConfigFlags.DockingEnable;
 
-            dmg.Run();
-        } else if (Helper.mode == 1) {
-            JSONTest jsonTest = new JSONTest();
-
-            jsonTest.Run(Helper.jsonPath);
+        //Unsafe access for no imgui.ini files
+        var io = ImGui.GetIO();
+        unsafe {
+            IntPtr ioPtr = (IntPtr)io.NativePtr;
+            ImGuiIO* imguiIO = (ImGuiIO*)ioPtr.ToPointer();
+            imguiIO->IniFilename = null;
         }
+
+        Image icon = Raylib.LoadImage("icon.png");
+        Raylib.SetWindowIcon(icon);
+
+        GUI gui = new GUI();
+
+        gui.Run();
     }
 }

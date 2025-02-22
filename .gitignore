@@ -11,4 +11,6 @@ test/v1/
 *.gb
 *.gbc
 
+*.ini
+
 !fall_back.gb

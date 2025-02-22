@@ -1,4 +1,6 @@
 using Raylib_cs;
+using rlImGui_cs;
+using ImGuiNET;
 
 public class PPU {
     private const int HBLANK = 0;
@@ -336,6 +338,7 @@ public class PPU {
         unsafe {
             Raylib.UpdateTexture(screenTexture, screenImage.Data);
         }
-        Raylib.DrawTextureEx(screenTexture, new System.Numerics.Vector2(0, 0), 0.0f, Helper.scale, Color.White);
+        //Raylib.DrawTextureEx(screenTexture, new System.Numerics.Vector2(0, 0), 0.0f, Helper.scale, Color.White);
+        //rlImGui.ImageSize(screenTexture, new System.Numerics.Vector2(160*Helper.scale, 144*Helper.scale)); //Keeps flashing
     }
 }

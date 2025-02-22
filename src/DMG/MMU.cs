@@ -1,22 +1,22 @@
 public class MMU {
-    private byte[] rom; //ROM
-    private byte[] wram; //Work RAM
-    private byte[] vram; //Video RAM
-    private byte[] oam; //Object Attribute Memory
-    private byte[] hram; //High RAM
-    private byte[] io; //I/O Registers
+    public byte[] rom; //ROM
+    public byte[] wram; //Work RAM
+    public byte[] vram; //Video RAM
+    public byte[] oam; //Object Attribute Memory
+    public byte[] hram; //High RAM
+    public byte[] io; //I/O Registers
     private byte[] bootRom; //Boot ROM
     private bool bootEnabled; //Boot ROM enabled flag
 
     private MBC mbc;
 
-    private const int ROM_SIZE = 0x8000; //32KB
-    private const int BOOT_ROM_SIZE = 0x0100; //256 bytes
-    private const int WRAM_SIZE = 0x2000; //8KB
-    private const int VRAM_SIZE = 0x2000; //8KB
-    private const int OAM_SIZE = 0x00A0; //160 bytes
-    private const int HRAM_SIZE = 0x007F; //127 bytes
-    private const int IO_SIZE = 0x0080; //128 bytes
+    public const int ROM_SIZE = 0x8000; //32KB
+    public const int BOOT_ROM_SIZE = 0x0100; //256 bytes
+    public const int WRAM_SIZE = 0x2000; //8KB
+    public const int VRAM_SIZE = 0x2000; //8KB
+    public const int OAM_SIZE = 0x00A0; //160 bytes
+    public const int HRAM_SIZE = 0x007F; //127 bytes
+    public const int IO_SIZE = 0x0080; //128 bytes
 
     public byte IE; //0xFFFF
     public byte IF; //0xFF0F

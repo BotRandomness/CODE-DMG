@@ -3,7 +3,7 @@ class CPU {
     public ushort PC, SP;
     public bool zero, negative, halfCarry, carry;
     public bool IME;
-    private bool halted;
+    public bool halted;
 
     private MMU mmu;
 

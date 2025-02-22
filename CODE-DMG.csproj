@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net6.0</TargetFramework>
-    <RootNamespace>CODE_DMG</RootNamespace>
+    <RootNamespace>CODE-DMG</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
@@ -13,8 +13,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="ImGui.NET" Version="1.90.9.1" />
     <PackageReference Include="Raylib-cs" Version="6.1.1" />
+    <PackageReference Include="rlImgui-cs" Version="2.1.0" />
   </ItemGroup>
 
 </Project>

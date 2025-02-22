@@ -1,11 +1,11 @@
 using Raylib_cs;
 
 class Helper {
-    public static int scale = 2;
-    public static string rom = "fall_back.gb";
+    public static int scale = 3;
+    public static string rom =  Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "fall_back.gb");
     public static string bootrom = "dmg_boot.bin";
     public static string jsonPath = "";
-    public static bool fpsEnable = false;
+    public static bool fpsEnable = true;
     public static string paletteName = "dmg";
     public static int mode = 0;
     public static bool raylibLog = false;

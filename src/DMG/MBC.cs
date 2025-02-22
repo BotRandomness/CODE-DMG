@@ -111,9 +111,9 @@ class MBC {
 
         string title = System.Text.Encoding.ASCII.GetString(titleBytes).TrimEnd(null);
 
-        if (title.Length > 15)
+        if (title.Length > 16)
         {
-            title = title.Substring(0, 15);
+            title = title.Substring(0, 16);
         }
 
         return "Title: " + title;
