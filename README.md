@@ -11,7 +11,7 @@
 </h1>
 
 <a href="https://github.com/BotRandomness/CODE-DMG">
-    <img src="git-res/Boot.png" alt="ProjectImage" width="500%" height="500%">
+    <img src="git-res/DMG-GUI.png" alt="ProjectImage" width="500%" height="500%">
 </a>
 
 <p align="center">
@@ -24,8 +24,15 @@
 <!-- ABOUT THE PROJECT -->
 
 ## Getting Started
-Want to use it, and mess around? Here's how you can get started!
+Want to use it, and mess around? Here's how you can get started! </br> </br>
+<em><strong>Side Note</strong>: You may be wondering why is there a "Core" version and "GUI" version. The Core version is only focused on the main emulation. The GUI version is using that core with a nice GUI, so there is no need to use the terminal. CODE-DMG is mainly focused on the Core. However the main 3 reason for the GUI version is ease of use, providing debug tools, and testing the flexibility of the Core. See "imgui" branch for source code of the GUI version.</em>
 ### Download
+#### GUI
+1. Download it from [here](https://github.com/BotRandomness/CODE-DMG/releases), or on the releases page. (win-x64, win-x86, osx-x64, osx-arm64, linux-x64)
+2. Unzip the folder
+3. Launch the executable (You may also need to enable execute permission on Unix-like Oses")
+4. You are ready to go!
+#### Core
 1. Download it from [here](https://github.com/BotRandomness/CODE-DMG/releases), or on the releases page. (win-x64, win-x86, osx-x64, osx-arm64, linux-x64)
 2. Unzip the folder
 3. Open up your terminal at the download location (Can be ran with CLI only for right now) <strong> Your current working directory must be at the application location when using!</strong>
@@ -39,9 +46,12 @@ Want to use it, and mess around? Here's how you can get started!
 - [SELECT] = [RSHIFT]
 - D-Pad = ArrowKeys
 ### Usage
+#### GUI
+After launching the executable, you are ready to go. Load a ROM by `File -> Open ROM`. Switch to Game mode <em>(the view without all the debug stuff)</em> by `View -> Game`
+#### Core
 For the most basics usage: `CODE-DMG --dmg <string:rom>` or `./CODE-DMG --dmg <string:rom>`. Terminal should be at the location of the application as the current working directory when calling `CODE-DMG`. Save files are supported (experimental), a `.sav` file will be genarated in the same location as the ROM. This `.sav` file can work between emulators like BGB. Currently CODE-DMG support MBC0/ROM Only roms, as well as experimental MBC1, MBC3 (no RTC), and MB5 (no rumble).
 #### Flags
-CODE-DMG for now is only runnable through the CLI. Executing the executable directly will rely on the fall back rom. Note: these flags can be passed in any order, and in any combination.
+CODE-DMG flags when using terminal. Note: these flags can be passed in any order, and in any combination.
 - `--dmg <string:path>`, `--dmg`: Starts up the emulator given a rom file (Default mode. No rom given, fall back is default)
 - `--json <string>`: Runs a CPU test for a instruction given a JSON file in test/v1
 - `-b <string:path>`, `--bootrom <string:path>`: Loads custom bootrom path than default. (dmg_boot.bin is default)
@@ -236,8 +246,8 @@ Also shoutout to the EmuDev community!
   - VRAM viewer, Memory viewer, step mode
 - [ ] Add MBC2, MBC6, and MBC7
 - [ ] Serial port
-- [ ] UI
-  - Maybe with raygui
+- [X] UI
+  - Working with Dear ImGUI (possbile port to raygui)
 - [ ] Audio
 - Post any feature request in the Issues tab!
 
