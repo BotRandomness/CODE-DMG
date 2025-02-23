@@ -1,25 +1,28 @@
-class CPU {
+namespace CODE_DMG;
+
+public class Cpu
+{
     public byte A, B, C, D, E, H, L, F;
-    public ushort PC, SP;
-    public bool zero, negative, halfCarry, carry;
-    public bool IME;
-    private bool halted;
+    public ushort Pc, Sp;
+    private bool ime,halted,zero, negative, halfCarry, carry;
 
-    private MMU mmu;
+    private readonly Mmu mmu;
 
-    public CPU(MMU mmu) {
+    public Cpu(Mmu mmu)
+    {
         A = B = C = D = E = H = L = F = 0;
-        PC = 0x0000;
-        SP = 0x0000; //Boot Rom will set this to 0xFFFE
+        Pc = 0x0000;
+        Sp = 0x0000; //Boot Rom will set this to 0xFFFE
         zero = negative = halfCarry = carry = false;
-        IME = false;
+        ime = false;
 
         this.mmu = mmu;
 
         Console.WriteLine("CPU init");
     }
 
-    public void Reset() {
+    public void Reset()
+    {
         A = 0x01;
         F = 0xB0; //Z=1,N=0,H=1,C=1
         UpdateFlagsFromF();
@@ -29,69 +32,76 @@ class CPU {
         E = 0xD8;
         H = 0x01;
         L = 0x4D;
-        PC = 0x100;
-        SP = 0xFFFE;
+        Pc = 0x100;
+        Sp = 0xFFFE;
 
-        mmu.JOYP = 0xCF;
-        mmu.DIV = 0x18;
-        mmu.IF = 0xE1;
-        mmu.LCDC = 0x91;
-        mmu.STAT = 0x85;
-        mmu.SCY = 0x00;
-        mmu.SCX = 0x00;
-        mmu.LY = 0x00;
-        mmu.LYC = 0x00;
-        mmu.BGP = 0xFC;
+        mmu.Joyp = 0xCF;
+        mmu.Div = 0x18;
+        mmu.If = 0xE1;
+        mmu.Lcdc = 0x91;
+        mmu.Stat = 0x85;
+        mmu.Scy = 0x00;
+        mmu.Scx = 0x00;
+        mmu.Ly = 0x00;
+        mmu.Lyc = 0x00;
+        mmu.Bgp = 0xFC;
         mmu.Write(0xFF50, A);
     }
 
-    public int HandleInterrupts() {
-        byte interruptFlag = mmu.Read(0xFF0F);
-        byte interruptEnable = mmu.Read(0xFFFF);
-        byte interrupts = (byte)(interruptFlag & interruptEnable);
+    private int HandleInterrupts()
+    {
+        var interruptFlag = mmu.Read(0xFF0F);
+        var interruptEnable = mmu.Read(0xFFFF);
+        var interrupts = (byte)(interruptFlag & interruptEnable);
 
-        if (interrupts != 0) {
+        if (interrupts != 0)
+        {
             halted = false;
-            if (IME) {
-                IME = false;
+            if (!ime) return 0;
+            ime = false;
 
-                for (int bit = 0; bit < 5; bit++) {
-                    if ((interrupts & (1 << bit)) != 0) {
-                        mmu.Write(0xFF0F, (byte)(interruptFlag & ~(1 << bit)));
+            for (var bit = 0; bit < 5; bit++)
+                if ((interrupts & (1 << bit)) != 0)
+                {
+                    mmu.Write(0xFF0F, (byte)(interruptFlag & ~(1 << bit)));
 
-                        SP--;
-                        mmu.Write(SP, (byte)((PC >> 8) & 0xFF));
-                        SP--;
-                        mmu.Write(SP, (byte)(PC & 0xFF));
+                    Sp--;
+                    mmu.Write(Sp, (byte)((Pc >> 8) & 0xFF));
+                    Sp--;
+                    mmu.Write(Sp, (byte)(Pc & 0xFF));
 
-                        PC = GetInterruptHandlerAddress(bit);
-                        return 20;
-                    }
+                    Pc = GetInterruptHandlerAddress(bit);
+                    return 20;
                 }
-            }
+
             return 0;
         }
 
-        if (halted && interrupts != 0)
-        {
-            halted = false;
-        }
+        if (halted && interrupts != 0) halted = false;
 
         return 0;
     }
 
-    private ushort GetInterruptHandlerAddress(int bit) {
-        switch (bit) {
-            case 0: return 0x40; //VBlank interrupt handler
-            case 1: return 0x48; //LCD STAT interrupt handler
-            case 2: return 0x50; //Timer interrupt handler
-            case 3: return 0x58; //Serial interrupt handler
-            case 4: return 0x60; //Joypad interrupt handler
-            default: return 0;
-        }
-    }    
+    private static ushort GetInterruptHandlerAddress(int bit)
+    {
+        return bit switch
+        {
+            0 => 0x40 //VBlank interrupt handler
+            ,
+            1 => 0x48 //LCD STAT interrupt handler
+            ,
+            2 => 0x50 //Timer interrupt handler
+            ,
+            3 => 0x58 //Serial interrupt handler
+            ,
+            4 => 0x60 //Joypad interrupt handler
+            ,
+            _ => 0
+        };
+    }
 
-    private void UpdateFFromFlags() {
+    private void UpdateFFromFlags()
+    {
         F = 0;
         if (zero) F |= 0x80; //Set the Zero flag (bit 7)
         if (negative) F |= 0x40; //Set the Negative (Subtraction) flag (bit 6)
@@ -99,30 +109,30 @@ class CPU {
         if (carry) F |= 0x10; //Set the Carry flag (bit 4)
     }
 
-    public void UpdateFlagsFromF() {
+    public void UpdateFlagsFromF()
+    {
         zero = (F & 0x80) != 0;
         negative = (F & 0x40) != 0;
         halfCarry = (F & 0x20) != 0;
         carry = (F & 0x10) != 0;
     }
-    
-    private ushort Get16BitReg(string pair) {
-        switch (pair.ToLower()) {
-            case "bc":
-                return (ushort)((B << 8) | C);
-            case "de":
-                return (ushort)((D << 8) | E);
-            case "hl":
-                return (ushort)((H << 8) | L);
-            case "af":
-                return (ushort)((A << 8) | F);
-            default:
-                return 0;
-        }
+
+    private ushort Get16BitReg(string pair)
+    {
+        return pair.ToLower() switch
+        {
+            "bc" => (ushort)((B << 8) | C),
+            "de" => (ushort)((D << 8) | E),
+            "hl" => (ushort)((H << 8) | L),
+            "af" => (ushort)((A << 8) | F),
+            _ => 0
+        };
     }
 
-    private void Load16BitReg(string pair, ushort value) {
-        switch (pair.ToLower()) {
+    private void Load16BitReg(string pair, ushort value)
+    {
+        switch (pair.ToLower())
+        {
             case "bc":
                 B = (byte)(value >> 8);
                 C = (byte)(value & 0xFF);
@@ -139,42 +149,41 @@ class CPU {
                 A = (byte)(value >> 8);
                 F = (byte)(value & 0xFF);
                 break;
-            default:
-                break;
         }
     }
 
-    public void Log() {
+    public void Log()
+    {
         UpdateFFromFlags();
-        ushort op1 = (PC);
-        ushort op2 = (ushort)(PC + 1);
-        ushort op3 = (ushort)(PC + 2);
-        ushort op4 = (ushort)(PC + 3);
-        Console.WriteLine("A: " + A.ToString("X2") + " F: " + F.ToString("X2") + " B: " + B.ToString("X2") + " C: " + C.ToString("X2") + " D: " + D.ToString("X2") + " E: " + E.ToString("X2") + " H: " + H.ToString("X2") + " L: " + L.ToString("X2") + " SP: " + SP.ToString("X4") + " PC: " + "00:" + PC.ToString("X4") + " (" + mmu.Read(op1).ToString("X2") + " " + mmu.Read(op2).ToString("X2") + " " + mmu.Read(op3).ToString("X2") + " " + mmu.Read(op4).ToString("X2") + ")");
+        var op1 = Pc;
+        var op2 = (ushort)(Pc + 1);
+        var op3 = (ushort)(Pc + 2);
+        var op4 = (ushort)(Pc + 3);
+        Console.WriteLine("A: " + A.ToString("X2") + " F: " + F.ToString("X2") + " B: " + B.ToString("X2") + " C: " +
+                          C.ToString("X2") + " D: " + D.ToString("X2") + " E: " + E.ToString("X2") + " H: " +
+                          H.ToString("X2") + " L: " + L.ToString("X2") + " SP: " + Sp.ToString("X4") + " PC: " + "00:" +
+                          Pc.ToString("X4") + " (" + mmu.Read(op1).ToString("X2") + " " + mmu.Read(op2).ToString("X2") +
+                          " " + mmu.Read(op3).ToString("X2") + " " + mmu.Read(op4).ToString("X2") + ")");
     }
 
-    private byte Fetch() {
-        return mmu.Read(PC++);
+    private byte Fetch()
+    {
+        return mmu.Read(Pc++);
     }
 
-    public int ExecuteInstruction() {
-        //Log();
-        //if(PC>= 0x100) {Log();}
-        
-        int interruptCycles = HandleInterrupts();
-        if (interruptCycles > 0) {
-            return interruptCycles;
-        }
+    public int ExecuteInstruction()
+    {
+        var interruptCycles = HandleInterrupts();
+        if (interruptCycles > 0) return interruptCycles;
 
-        if (halted) {
-            return 4;
-        }
+        if (halted) return 4;
 
-        byte opcode = Fetch();
+        var opcode = Fetch();
 
-        switch (opcode) {
+        switch (opcode)
+        {
             case 0x00:
-                return NOP();
+                return Nop();
             case 0x01:
                 return LD_RR_U16(ref B, ref C);
             case 0x02:
@@ -188,7 +197,7 @@ class CPU {
             case 0x06:
                 return LD_R_U8(ref B);
             case 0x07:
-                return RLCA();
+                return Rlca();
             case 0x08:
                 return LD_AU16_SP();
             case 0x09:
@@ -204,9 +213,9 @@ class CPU {
             case 0x0E:
                 return LD_R_U8(ref C);
             case 0x0F:
-                return RRCA();
+                return Rrca();
             case 0x10:
-                return STOP();
+                return Stop();
             case 0x11:
                 return LD_RR_U16(ref D, ref E);
             case 0x12:
@@ -220,7 +229,7 @@ class CPU {
             case 0x16:
                 return LD_R_U8(ref D);
             case 0x17:
-                return RLA();
+                return Rla();
             case 0x18:
                 return JR_CON_I8(true);
             case 0x19:
@@ -236,7 +245,7 @@ class CPU {
             case 0x1E:
                 return LD_R_U8(ref E);
             case 0x1F:
-                return RRA();
+                return Rra();
             case 0x20:
                 return JR_CON_I8(!zero);
             case 0x21:
@@ -252,7 +261,7 @@ class CPU {
             case 0x26:
                 return LD_R_U8(ref H);
             case 0x27:
-                return DAA();
+                return Daa();
             case 0x28:
                 return JR_CON_I8(zero);
             case 0x29:
@@ -268,7 +277,7 @@ class CPU {
             case 0x2E:
                 return LD_R_U8(ref L);
             case 0x2F:
-                return CPL();
+                return Cpl();
             case 0x30:
                 return JR_CON_I8(!carry);
             case 0x31:
@@ -284,7 +293,7 @@ class CPU {
             case 0x36:
                 return LD_AHL_U8();
             case 0x37:
-                return SCF();
+                return Scf();
             case 0x38:
                 return JR_CON_I8(carry);
             case 0x39:
@@ -300,7 +309,7 @@ class CPU {
             case 0x3E:
                 return LD_R_U8(ref A);
             case 0x3F:
-                return CCF();
+                return Ccf();
             case 0x40:
                 return LD_R1_R2(ref B, ref B);
             case 0x41:
@@ -410,7 +419,7 @@ class CPU {
             case 0x75:
                 return LD_ARR_R(ref L, "hl");
             case 0x76:
-                return HALT();
+                return Halt();
             case 0x77:
                 return LD_ARR_R(ref A, "hl");
             case 0x78:
@@ -572,15 +581,15 @@ class CPU {
             case 0xC6:
                 return ADD_A_U8();
             case 0xC7:
-                return RST(0x0000);
+                return Rst(0x0000);
             case 0xC8:
                 return RET_CON(zero);
             case 0xC9:
-                return RET();
+                return Ret();
             case 0xCA:
                 return JP_CON_U16(zero);
             case 0xCB:
-                return ExecuteCB();
+                return ExecuteCb();
             case 0xCC:
                 return CALL_CON_U16(zero);
             case 0xCD:
@@ -588,7 +597,7 @@ class CPU {
             case 0xCE:
                 return ADC_A_U8();
             case 0xCF:
-                return RST(0x0008);
+                return Rst(0x0008);
             case 0xD0:
                 return RET_CON(!carry);
             case 0xD1:
@@ -604,11 +613,11 @@ class CPU {
             case 0xD6:
                 return SUB_A_U8();
             case 0xD7:
-                return RST(0x0010);
+                return Rst(0x0010);
             case 0xD8:
                 return RET_CON(carry);
             case 0xD9:
-                return RETI();
+                return Reti();
             case 0xDA:
                 return JP_CON_U16(carry);
             case 0xDB:
@@ -620,7 +629,7 @@ class CPU {
             case 0xDE:
                 return SBC_A_U8();
             case 0xDF:
-                return RST(0x0018);
+                return Rst(0x0018);
             case 0xE0:
                 return LD_FF00_U8_A();
             case 0xE1:
@@ -636,7 +645,7 @@ class CPU {
             case 0xE6:
                 return AND_A_U8();
             case 0xE7:
-                return RST(0x0020);
+                return Rst(0x0020);
             case 0xE8:
                 return ADD_SP_I8();
             case 0xE9:
@@ -644,15 +653,13 @@ class CPU {
             case 0xEA:
                 return LD_AU16_A();
             case 0xEB:
-                return DMG_EXIT(opcode);
             case 0xEC:
-                return DMG_EXIT(opcode);
             case 0xED:
                 return DMG_EXIT(opcode);
             case 0xEE:
                 return XOR_A_U8();
             case 0xEF:
-                return RST(0x0028);
+                return Rst(0x0028);
             case 0xF0:
                 return LD_A_FF00_U8();
             case 0xF1:
@@ -660,7 +667,7 @@ class CPU {
             case 0xF2:
                 return LD_A_FF00_C();
             case 0xF3:
-                return DI();
+                return Di();
             case 0xF4:
                 return DMG_EXIT(opcode);
             case 0xF5:
@@ -668,7 +675,7 @@ class CPU {
             case 0xF6:
                 return OR_A_U8();
             case 0xF7:
-                return RST(0x0030);
+                return Rst(0x0030);
             case 0xF8:
                 return LD_HL_SP_I8();
             case 0xF9:
@@ -676,7 +683,7 @@ class CPU {
             case 0xFA:
                 return LD_A_AU16();
             case 0xFB:
-                return EI();
+                return Ei();
             case 0xFC:
                 return DMG_EXIT(opcode);
             case 0xFD:
@@ -684,18 +691,16 @@ class CPU {
             case 0xFE:
                 return CP_A_U8();
             case 0xFF:
-                return RST(0x0038);
-            default:
-                //Console.WriteLine("Unimplemented Opcode: " + opcode.ToString("X2") + " , PC: " + (PC-1).ToString("X4"));
-                //Environment.Exit(1);
-                //return 0;
+                return Rst(0x0038);
         }
     }
 
-    public int ExecuteCB() {
-        byte suffix = Fetch();
+    private int ExecuteCb()
+    {
+        var suffix = Fetch();
 
-        switch (suffix) {
+        switch (suffix)
+        {
             case 0x00:
                 return RLC_R(ref B);
             case 0x01:
@@ -1208,187 +1213,205 @@ class CPU {
                 return SET_N_AHL(7);
             case 0xFF:
                 return SET_N_R(7, ref A);
-            default:
-                //Console.WriteLine("Unimplemented CB Opcode: " + suffix.ToString("X2") + " , PC: " + (PC-1).ToString("X4"));
-                //Environment.Exit(1);
-                //return 0;
         }
     }
 
     //R = 8bit reg, RR = 16bit reg, U8 = byte, U16 = ushort, I8, sbyte, AXX = (XX) Value in memory at XX
 
-    //x8 LSM
-    private int LD_ARR_R(ref byte r, string regPair) {
-        ushort addr = Get16BitReg(regPair);
+    private int LD_ARR_R(ref byte r, string regPair)
+    {
+        var addr = Get16BitReg(regPair);
         mmu.Write(addr, r);
         return 8;
     }
 
-    private int LD_AHLM_A() {
-        ushort hlm = Get16BitReg("hl");
+    private int LD_AHLM_A()
+    {
+        var hlm = Get16BitReg("hl");
         mmu.Write(hlm, A);
         hlm = (ushort)(hlm - 1);
         Load16BitReg("hl", hlm);
         return 8;
     }
 
-    private int LD_AHLI_A() {
-        ushort hli = Get16BitReg("hl");
+    private int LD_AHLI_A()
+    {
+        var hli = Get16BitReg("hl");
         mmu.Write(hli, A);
         hli = (ushort)(hli + 1);
         Load16BitReg("hl", hli);
         return 8;
     }
 
-    private int LD_R_U8(ref byte r) {
-        byte u8 = Fetch();
+    private int LD_R_U8(ref byte r)
+    {
+        var u8 = Fetch();
         r = u8;
         return 8;
     }
 
-    private int LD_AHL_U8() {
-        ushort addr = Get16BitReg("hl");
-        byte u8 = Fetch();
+    private int LD_AHL_U8()
+    {
+        var addr = Get16BitReg("hl");
+        var u8 = Fetch();
         mmu.Write(addr, u8);
         return 12;
     }
 
-    private int LD_R_ARR(ref byte r, string regPair) {
-        ushort addr = Get16BitReg(regPair);
+    private int LD_R_ARR(ref byte r, string regPair)
+    {
+        var addr = Get16BitReg(regPair);
         r = mmu.Read(addr);
         return 8;
     }
 
-    private int LD_A_AHLM() {
-        ushort hlm = Get16BitReg("hl");
+    private int LD_A_AHLM()
+    {
+        var hlm = Get16BitReg("hl");
         A = mmu.Read(hlm);
         hlm = (ushort)(hlm - 1);
         Load16BitReg("hl", hlm);
         return 8;
     }
 
-    private int LD_A_AHLI() {
-        ushort hli = Get16BitReg("hl");
+    private int LD_A_AHLI()
+    {
+        var hli = Get16BitReg("hl");
         A = mmu.Read(hli);
         hli = (ushort)(hli + 1);
         Load16BitReg("hl", hli);
         return 8;
     }
 
-    private int LD_R1_R2(ref byte r1, ref byte r2) {
+    private static int LD_R1_R2(ref byte r1, ref byte r2)
+    {
         r1 = r2;
         return 4;
     }
 
-    private int LD_FF00_U8_A() {
-        byte u8 = Fetch();
-        ushort addr = (ushort)(0xFF00 + u8);
+    private int LD_FF00_U8_A()
+    {
+        var u8 = Fetch();
+        var addr = (ushort)(0xFF00 + u8);
         mmu.Write(addr, A);
         return 12;
     }
 
-    private int LD_A_FF00_U8() {
-        byte u8 = Fetch();
-        ushort addr = (ushort)(0xFF00 + u8);
+    private int LD_A_FF00_U8()
+    {
+        var u8 = Fetch();
+        var addr = (ushort)(0xFF00 + u8);
         A = mmu.Read(addr);
         return 12;
     }
 
-    private int LD_FF00_C_A() {
-        ushort addr = (ushort)(0xFF00 + C);
+    private int LD_FF00_C_A()
+    {
+        var addr = (ushort)(0xFF00 + C);
         mmu.Write(addr, A);
         return 8;
     }
 
-    private int LD_A_FF00_C() {
-        ushort addr = (ushort)(0xFF00 + C);
+    private int LD_A_FF00_C()
+    {
+        var addr = (ushort)(0xFF00 + C);
         A = mmu.Read(addr);
         return 8;
     }
 
-    private int LD_AU16_A() {
-        byte lower = Fetch();
-        byte upper = Fetch();
-        ushort value = (ushort)((upper << 8) | lower);
+    private int LD_AU16_A()
+    {
+        var lower = Fetch();
+        var upper = Fetch();
+        var value = (ushort)((upper << 8) | lower);
         mmu.Write(value, A);
         return 16;
-    }  
+    }
 
-    private int LD_A_AU16() {
-        byte lower = Fetch();
-        byte upper = Fetch();
-        ushort value = (ushort)((upper << 8) | lower);
+    private int LD_A_AU16()
+    {
+        var lower = Fetch();
+        var upper = Fetch();
+        var value = (ushort)((upper << 8) | lower);
         A = mmu.Read(value);
         return 16;
     }
 
     //x16 LSM
-    private int LD_SP_U16() {
-        byte lower = Fetch();
-        byte upper = Fetch();
-        ushort value = (ushort)((upper << 8) | lower);
+    private int LD_SP_U16()
+    {
+        var lower = Fetch();
+        var upper = Fetch();
+        var value = (ushort)((upper << 8) | lower);
 
-        SP = value;
+        Sp = value;
         return 12;
     }
 
-    private int LD_RR_U16(ref byte r1, ref byte r2) {
+    private int LD_RR_U16(ref byte r1, ref byte r2)
+    {
         r2 = Fetch();
         r1 = Fetch();
         return 12;
     }
 
-    private int LD_AU16_SP() {
-        byte lower = Fetch();
-        byte upper = Fetch();
-        ushort address = (ushort)((upper << 8) | lower);
+    private int LD_AU16_SP()
+    {
+        var lower = Fetch();
+        var upper = Fetch();
+        var address = (ushort)((upper << 8) | lower);
 
-        byte spLower = (byte)(SP & 0xFF);
-        byte spUpper = (byte)((SP >> 8) & 0xFF);
+        var spLower = (byte)(Sp & 0xFF);
+        var spUpper = (byte)((Sp >> 8) & 0xFF);
         mmu.Write(address, spLower);
         mmu.Write((ushort)(address + 1), spUpper);
 
         return 20;
     }
 
-    private int PUSH_RR(string regPair) {
-        ushort regVal = Get16BitReg(regPair);
-        SP--;
-        mmu.Write(SP, (byte)(regVal >> 8));
-        SP--;
-        mmu.Write(SP, (byte)(regVal & 0xFF));
+    private int PUSH_RR(string regPair)
+    {
+        var regVal = Get16BitReg(regPair);
+        Sp--;
+        mmu.Write(Sp, (byte)(regVal >> 8));
+        Sp--;
+        mmu.Write(Sp, (byte)(regVal & 0xFF));
         return 16;
     }
 
-    private int POP_RR(string regPair) {
-        byte lowByte = mmu.Read(SP);
-        SP++;
-        byte highByte = mmu.Read(SP);
-        ushort regVal = (ushort)((highByte << 8) | lowByte);
+    private int POP_RR(string regPair)
+    {
+        var lowByte = mmu.Read(Sp);
+        Sp++;
+        var highByte = mmu.Read(Sp);
+        var regVal = (ushort)((highByte << 8) | lowByte);
         Load16BitReg(regPair, regVal);
-        SP++;
+        Sp++;
         return 12;
     }
 
-    private int POP_AF() {
-        byte lowByte = mmu.Read(SP);
-        SP++;
-        byte highByte = mmu.Read(SP);
+    private int POP_AF()
+    {
+        var lowByte = mmu.Read(Sp);
+        Sp++;
+        var highByte = mmu.Read(Sp);
         A = highByte;
         F = (byte)(lowByte & 0xF0);
         UpdateFlagsFromF();
-        SP++;
+        Sp++;
         return 12;
     }
 
-    private int LD_SP_HL() {
-        SP = Get16BitReg("hl");
+    private int LD_SP_HL()
+    {
+        Sp = Get16BitReg("hl");
         return 8;
     }
 
     //x8 ALU
-    private int INC_R(ref byte r) {
-        int val = r + 1;
+    private int INC_R(ref byte r)
+    {
+        var val = r + 1;
 
         zero = (val & 0xFF) == 0;
         negative = false;
@@ -1399,10 +1422,11 @@ class CPU {
         return 4;
     }
 
-    private int INC_AHL() {
-        ushort addr = Get16BitReg("hl");
-        byte val = mmu.Read(addr);
-        int result = val + 1;
+    private int INC_AHL()
+    {
+        var addr = Get16BitReg("hl");
+        var val = mmu.Read(addr);
+        var result = val + 1;
 
         zero = (result & 0xFF) == 0;
         negative = false;
@@ -1413,10 +1437,11 @@ class CPU {
         return 12;
     }
 
-    private int DEC_R(ref byte r) {
-        int val = r - 1;
+    private int DEC_R(ref byte r)
+    {
+        var val = r - 1;
 
-        zero = (val & 0xFF) == 0; 
+        zero = (val & 0xFF) == 0;
         negative = true;
         halfCarry = (r & 0x0F) == 0;
         UpdateFFromFlags();
@@ -1425,12 +1450,13 @@ class CPU {
         return 4;
     }
 
-    private int DEC_AHL() {
-        ushort addr = Get16BitReg("hl");
-        byte val = mmu.Read(addr);
-        int result = val - 1;
+    private int DEC_AHL()
+    {
+        var addr = Get16BitReg("hl");
+        var val = mmu.Read(addr);
+        var result = val - 1;
 
-        zero = (result & 0xFF) == 0; 
+        zero = (result & 0xFF) == 0;
         negative = true;
         halfCarry = (val & 0x0F) == 0;
         UpdateFFromFlags();
@@ -1439,12 +1465,13 @@ class CPU {
         return 12;
     }
 
-    private int ADD_A_R(ref byte r) {
-        int val = A + r;
+    private int ADD_A_R(ref byte r)
+    {
+        var val = A + r;
 
         zero = (val & 0xFF) == 0;
-        negative = false;                  
-        halfCarry = ((A & 0xF) + (r & 0xF)) > 0xF;
+        negative = false;
+        halfCarry = (A & 0xF) + (r & 0xF) > 0xF;
         carry = val > 0xFF;
         UpdateFFromFlags();
 
@@ -1452,14 +1479,15 @@ class CPU {
         return 4;
     }
 
-    private int ADD_A_ARR(string regPair) {
-        ushort addr = Get16BitReg(regPair);
-        byte val = mmu.Read(addr);    
-        int result = A + val;
+    private int ADD_A_ARR(string regPair)
+    {
+        var addr = Get16BitReg(regPair);
+        var val = mmu.Read(addr);
+        var result = A + val;
 
         zero = (result & 0xFF) == 0;
-        negative = false;                  
-        halfCarry = ((A & 0xF) + (val & 0xF)) > 0xF;
+        negative = false;
+        halfCarry = (A & 0xF) + (val & 0xF) > 0xF;
         carry = result > 0xFF;
         UpdateFFromFlags();
 
@@ -1467,13 +1495,14 @@ class CPU {
         return 8;
     }
 
-    private int ADD_A_U8() {
-        byte val = Fetch();
-        int result = A + val;
+    private int ADD_A_U8()
+    {
+        var val = Fetch();
+        var result = A + val;
 
         zero = (result & 0xFF) == 0;
-        negative = false;                  
-        halfCarry = ((A & 0xF) + (val & 0xF)) > 0xF;
+        negative = false;
+        halfCarry = (A & 0xF) + (val & 0xF) > 0xF;
         carry = result > 0xFF;
         UpdateFFromFlags();
 
@@ -1481,12 +1510,13 @@ class CPU {
         return 8;
     }
 
-    private int ADC_A_R(ref byte r) {
-        int val = A + r + (carry ? 1 : 0);
+    private int ADC_A_R(ref byte r)
+    {
+        var val = A + r + (carry ? 1 : 0);
 
         zero = (val & 0xFF) == 0;
-        negative = false;                  
-        halfCarry = ((A & 0xF) + (r & 0xF) + (carry ? 1 : 0)) > 0xF;
+        negative = false;
+        halfCarry = (A & 0xF) + (r & 0xF) + (carry ? 1 : 0) > 0xF;
         carry = val > 0xFF;
         UpdateFFromFlags();
 
@@ -1494,14 +1524,15 @@ class CPU {
         return 4;
     }
 
-    private int ADC_A_ARR(string regPair) {
-        ushort addr = Get16BitReg(regPair);
-        byte val = mmu.Read(addr);    
-        int result = A + val + (carry ? 1 : 0);
+    private int ADC_A_ARR(string regPair)
+    {
+        var addr = Get16BitReg(regPair);
+        var val = mmu.Read(addr);
+        var result = A + val + (carry ? 1 : 0);
 
         zero = (result & 0xFF) == 0;
-        negative = false;                  
-        halfCarry = ((A & 0xF) + (val & 0xF) + (carry ? 1 : 0)) > 0xF;
+        negative = false;
+        halfCarry = (A & 0xF) + (val & 0xF) + (carry ? 1 : 0) > 0xF;
         carry = result > 0xFF;
         UpdateFFromFlags();
 
@@ -1509,13 +1540,14 @@ class CPU {
         return 8;
     }
 
-    private int ADC_A_U8() {
-        byte val = Fetch();
-        int result = A + val + (carry ? 1 : 0);
+    private int ADC_A_U8()
+    {
+        var val = Fetch();
+        var result = A + val + (carry ? 1 : 0);
 
         zero = (result & 0xFF) == 0;
-        negative = false;                  
-        halfCarry = ((A & 0xF) + (val & 0xF) + (carry ? 1 : 0)) > 0xF;
+        negative = false;
+        halfCarry = (A & 0xF) + (val & 0xF) + (carry ? 1 : 0) > 0xF;
         carry = result > 0xFF;
         UpdateFFromFlags();
 
@@ -1523,8 +1555,9 @@ class CPU {
         return 8;
     }
 
-    private int SUB_A_R(ref byte r) {
-        int val = A - r;
+    private int SUB_A_R(ref byte r)
+    {
+        var val = A - r;
 
         zero = val == 0;
         negative = true;
@@ -1536,10 +1569,11 @@ class CPU {
         return 4;
     }
 
-    private int SUB_A_ARR(string regPair) {
-        ushort addr = Get16BitReg(regPair); 
-        byte val = mmu.Read(addr);    
-        int result = A - val;
+    private int SUB_A_ARR(string regPair)
+    {
+        var addr = Get16BitReg(regPair);
+        var val = mmu.Read(addr);
+        var result = A - val;
 
         zero = (result & 0xFF) == 0;
         negative = true;
@@ -1551,9 +1585,10 @@ class CPU {
         return 8;
     }
 
-    private int SUB_A_U8() {
-        byte val = Fetch();
-        int result = A - val;
+    private int SUB_A_U8()
+    {
+        var val = Fetch();
+        var result = A - val;
 
         zero = result == 0;
         negative = true;
@@ -1565,12 +1600,13 @@ class CPU {
         return 8;
     }
 
-    private int SBC_A_R(ref byte r) {
-        int val = A - r - (carry ? 1 : 0);
+    private int SBC_A_R(ref byte r)
+    {
+        var val = A - r - (carry ? 1 : 0);
 
         zero = (val & 0xFF) == 0;
         negative = true;
-        halfCarry = ((A & 0xF) - (r & 0xF) - (carry ? 1 : 0)) < 0;
+        halfCarry = (A & 0xF) - (r & 0xF) - (carry ? 1 : 0) < 0;
         carry = val < 0;
         UpdateFFromFlags();
 
@@ -1578,14 +1614,15 @@ class CPU {
         return 4;
     }
 
-    private int SBC_A_ARR(string regPair) {
-        ushort addr = Get16BitReg(regPair); 
-        byte val = mmu.Read(addr);    
-        int result = A - val - (carry ? 1 : 0);
+    private int SBC_A_ARR(string regPair)
+    {
+        var addr = Get16BitReg(regPair);
+        var val = mmu.Read(addr);
+        var result = A - val - (carry ? 1 : 0);
 
         zero = (result & 0xFF) == 0;
         negative = true;
-        halfCarry = ((A & 0xF) - (val & 0xF) - (carry ? 1 : 0)) < 0;
+        halfCarry = (A & 0xF) - (val & 0xF) - (carry ? 1 : 0) < 0;
         carry = result < 0;
         UpdateFFromFlags();
 
@@ -1593,13 +1630,14 @@ class CPU {
         return 8;
     }
 
-    private int SBC_A_U8() {
-        byte val = Fetch();
-        int result = A - val - (carry ? 1 : 0);
+    private int SBC_A_U8()
+    {
+        var val = Fetch();
+        var result = A - val - (carry ? 1 : 0);
 
         zero = (result & 0xFF) == 0;
         negative = true;
-        halfCarry = ((A & 0xF) - (val & 0xF) - (carry ? 1 : 0)) < 0;
+        halfCarry = (A & 0xF) - (val & 0xF) - (carry ? 1 : 0) < 0;
         carry = result < 0;
         UpdateFFromFlags();
 
@@ -1607,8 +1645,9 @@ class CPU {
         return 8;
     }
 
-    private int AND_A_R(ref byte r) {
-        int val = A & r;
+    private int AND_A_R(ref byte r)
+    {
+        var val = A & r;
 
         zero = (val & 0xFF) == 0;
         negative = false;
@@ -1620,10 +1659,11 @@ class CPU {
         return 4;
     }
 
-    private int AND_A_ARR(string regPair) {
-        ushort addr = Get16BitReg(regPair);
-        byte val = mmu.Read(addr);
-        int result = A & val;
+    private int AND_A_ARR(string regPair)
+    {
+        var addr = Get16BitReg(regPair);
+        var val = mmu.Read(addr);
+        var result = A & val;
 
         zero = (result & 0xFF) == 0;
         negative = false;
@@ -1635,9 +1675,10 @@ class CPU {
         return 8;
     }
 
-    private int AND_A_U8() {
-        byte val = Fetch();
-        int result = A & val;
+    private int AND_A_U8()
+    {
+        var val = Fetch();
+        var result = A & val;
 
         zero = (result & 0xFF) == 0;
         negative = false;
@@ -1649,10 +1690,9 @@ class CPU {
         return 8;
     }
 
-    private int XOR_A_R(ref byte r) {
-        int val = A ^ r;
-
-        //zero = A == 0;
+    private int XOR_A_R(ref byte r)
+    {
+        var val = A ^ r;
         zero = (val & 0xFF) == 0;
         negative = false;
         halfCarry = false;
@@ -1663,10 +1703,11 @@ class CPU {
         return 4;
     }
 
-    private int XOR_A_ARR(string regPair) {
-        ushort addr = Get16BitReg(regPair);
-        byte val = mmu.Read(addr);
-        int result = A ^ val;
+    private int XOR_A_ARR(string regPair)
+    {
+        var addr = Get16BitReg(regPair);
+        var val = mmu.Read(addr);
+        var result = A ^ val;
 
         zero = (result & 0xFF) == 0;
         negative = false;
@@ -1678,9 +1719,10 @@ class CPU {
         return 8;
     }
 
-    private int XOR_A_U8() {
-        byte val = Fetch();
-        int result = A ^ val;
+    private int XOR_A_U8()
+    {
+        var val = Fetch();
+        var result = A ^ val;
 
         zero = (result & 0xFF) == 0;
         negative = false;
@@ -1692,8 +1734,9 @@ class CPU {
         return 8;
     }
 
-    private int OR_A_R(ref byte r) {
-        int val = A | r;
+    private int OR_A_R(ref byte r)
+    {
+        var val = A | r;
 
         zero = (val & 0xFF) == 0;
         negative = false;
@@ -1705,10 +1748,11 @@ class CPU {
         return 4;
     }
 
-    private int OR_A_ARR(string regPair) {
-        ushort addr = Get16BitReg(regPair);
-        byte val = mmu.Read(addr);
-        int result = A | val;
+    private int OR_A_ARR(string regPair)
+    {
+        var addr = Get16BitReg(regPair);
+        var val = mmu.Read(addr);
+        var result = A | val;
 
         zero = (result & 0xFF) == 0;
         negative = false;
@@ -1720,9 +1764,10 @@ class CPU {
         return 8;
     }
 
-    private int OR_A_U8() {
-        byte val = Fetch();
-        int result = A | val;
+    private int OR_A_U8()
+    {
+        var val = Fetch();
+        var result = A | val;
 
         zero = (result & 0xFF) == 0;
         negative = false;
@@ -1734,8 +1779,9 @@ class CPU {
         return 8;
     }
 
-    private int CP_A_R(ref byte r) {
-        int result = A - r;
+    private int CP_A_R(ref byte r)
+    {
+        var result = A - r;
 
         zero = (result & 0xFF) == 0;
         negative = true;
@@ -1746,10 +1792,11 @@ class CPU {
         return 4;
     }
 
-    private int CP_A_ARR(string regPair) {
-        ushort addr = Get16BitReg(regPair);
-        byte val = mmu.Read(addr);
-        int result = A - val;
+    private int CP_A_ARR(string regPair)
+    {
+        var addr = Get16BitReg(regPair);
+        var val = mmu.Read(addr);
+        var result = A - val;
 
         zero = result == 0;
         negative = true;
@@ -1760,9 +1807,10 @@ class CPU {
         return 8;
     }
 
-    private int CP_A_U8() {
-        byte val = Fetch();
-        int result = A - val;
+    private int CP_A_U8()
+    {
+        var val = Fetch();
+        var result = A - val;
 
         zero = result == 0;
         negative = true;
@@ -1773,7 +1821,8 @@ class CPU {
         return 8;
     }
 
-    private int CPL() {
+    private int Cpl()
+    {
         A = (byte)~A;
 
         negative = true;
@@ -1783,7 +1832,8 @@ class CPU {
         return 4;
     }
 
-    private int SCF() {
+    private int Scf()
+    {
         carry = true;
         negative = false;
         halfCarry = false;
@@ -1792,7 +1842,8 @@ class CPU {
         return 4;
     }
 
-    private int CCF() {
+    private int Ccf()
+    {
         carry = !carry;
         negative = false;
         halfCarry = false;
@@ -1801,20 +1852,18 @@ class CPU {
         return 4;
     }
 
-    private int DAA() {
-        byte adjust = (byte)(carry ? 0x60 : 0x00);
-        if (halfCarry) {
-            adjust |= 0x06;
-        }
-        if (negative) {
+    private int Daa()
+    {
+        var adjust = (byte)(carry ? 0x60 : 0x00);
+        if (halfCarry) adjust |= 0x06;
+        if (negative)
+        {
             A -= adjust;
-        } else {
-            if ((A & 0x0F) > 0x09) {
-                adjust |= 0x06;
-            }
-            if (A > 0x99) {
-                adjust |= 0x60;
-            }
+        }
+        else
+        {
+            if ((A & 0x0F) > 0x09) adjust |= 0x06;
+            if (A > 0x99) adjust |= 0x60;
 
             A += adjust;
         }
@@ -1828,37 +1877,42 @@ class CPU {
     }
 
     //x16 ALU
-    private int INC_RR(string regPair) {
-        ushort regVal = Get16BitReg(regPair);
+    private int INC_RR(string regPair)
+    {
+        var regVal = Get16BitReg(regPair);
         regVal++;
         Load16BitReg(regPair, regVal);
         return 8;
     }
 
-    private int INC_SP() {
-        SP++;
+    private int INC_SP()
+    {
+        Sp++;
         return 8;
     }
 
-    private int DEC_RR(string regPair) {
-        ushort regVal = Get16BitReg(regPair);
+    private int DEC_RR(string regPair)
+    {
+        var regVal = Get16BitReg(regPair);
         regVal--;
         Load16BitReg(regPair, regVal);
         return 8;
     }
 
-    private int DEC_SP() {
-        SP--;
+    private int DEC_SP()
+    {
+        Sp--;
         return 8;
     }
 
-    private int ADD_HL_RR(string regPair) {
-        ushort hl = Get16BitReg("hl");
-        ushort regVal = Get16BitReg(regPair);
-        int result = hl + regVal;
+    private int ADD_HL_RR(string regPair)
+    {
+        var hl = Get16BitReg("hl");
+        var regVal = Get16BitReg(regPair);
+        var result = hl + regVal;
 
         negative = false;
-        halfCarry = ((hl & 0x0FFF) + (regVal & 0x0FFF)) > 0x0FFF;
+        halfCarry = (hl & 0x0FFF) + (regVal & 0x0FFF) > 0x0FFF;
         carry = result > 0xFFFF;
         UpdateFFromFlags();
 
@@ -1867,12 +1921,13 @@ class CPU {
         return 8;
     }
 
-    private int ADD_HL_SP() {
-        ushort hl = Get16BitReg("hl");
-        int result = hl + SP;
+    private int ADD_HL_SP()
+    {
+        var hl = Get16BitReg("hl");
+        var result = hl + Sp;
 
         negative = false;
-        halfCarry = ((hl & 0x0FFF) + (SP & 0x0FFF)) > 0x0FFF;
+        halfCarry = (hl & 0x0FFF) + (Sp & 0x0FFF) > 0x0FFF;
         carry = result > 0xFFFF;
         UpdateFFromFlags();
 
@@ -1881,31 +1936,31 @@ class CPU {
         return 8;
     }
 
-    private int ADD_SP_I8() {
-        byte lower = (byte)(SP & 0xFF);
-        byte high = (byte)((SP >> 8) & 0xFF);
-        sbyte sb = (sbyte)Fetch();
-        int result = SP + (ushort)sb;
+    private int ADD_SP_I8()
+    {
+        var sb = (sbyte)Fetch();
+        var result = Sp + (ushort)sb;
 
         zero = false;
         negative = false;
-        halfCarry = ((SP ^ sb ^ (result & 0xFFFF)) & 0x10) == 0x10;
-        carry = ((SP ^ sb ^ (result & 0xFFFF)) & 0x100) == 0x100;
+        halfCarry = ((Sp ^ sb ^ (result & 0xFFFF)) & 0x10) == 0x10;
+        carry = ((Sp ^ sb ^ (result & 0xFFFF)) & 0x100) == 0x100;
         UpdateFFromFlags();
 
-        SP = (ushort)result;
+        Sp = (ushort)result;
 
         return 16;
     }
 
-    private int LD_HL_SP_I8() {
-        sbyte sb = (sbyte)Fetch();
-        int result = SP + sb;
+    private int LD_HL_SP_I8()
+    {
+        var sb = (sbyte)Fetch();
+        var result = Sp + sb;
 
         zero = false;
         negative = false;
-        halfCarry = ((SP ^ sb ^ (result & 0xFFFF)) & 0x10) == 0x10;
-        carry = ((SP ^ sb ^ (result & 0xFFFF)) & 0x100) == 0x100;
+        halfCarry = ((Sp ^ sb ^ (result & 0xFFFF)) & 0x10) == 0x10;
+        carry = ((Sp ^ sb ^ (result & 0xFFFF)) & 0x100) == 0x100;
         UpdateFFromFlags();
 
         Load16BitReg("hl", (ushort)result);
@@ -1914,9 +1969,10 @@ class CPU {
     }
 
     //x8 RSB
-    private int RLCA() {
-        byte wrap = (byte)(A & 0x80);
-        byte result = (byte)((A << 1) | (wrap >> 7));
+    private int Rlca()
+    {
+        var wrap = (byte)(A & 0x80);
+        var result = (byte)((A << 1) | (wrap >> 7));
 
         zero = false;
         negative = false;
@@ -1929,9 +1985,10 @@ class CPU {
         return 4;
     }
 
-    private int RRCA() {
-        byte wrap = (byte)(A & 0x01);
-        byte result = (byte)((A >> 1) | (wrap << 7));
+    private int Rrca()
+    {
+        var wrap = (byte)(A & 0x01);
+        var result = (byte)((A >> 1) | (wrap << 7));
 
         zero = false;
         negative = false;
@@ -1944,9 +2001,10 @@ class CPU {
         return 4;
     }
 
-    private int RLA() {
-        byte carryRLA = (byte)(carry ? 1 : 0);
-        byte result = (byte)((A << 1) | carryRLA);
+    private int Rla()
+    {
+        var carryRla = (byte)(carry ? 1 : 0);
+        var result = (byte)((A << 1) | carryRla);
 
         zero = false;
         negative = false;
@@ -1958,9 +2016,10 @@ class CPU {
         return 4;
     }
 
-    private int RRA() {
-        byte carryRRA = (byte)(carry ? 1 : 0);
-        byte result = (byte)((A >> 1) | (carryRRA << 7));
+    private int Rra()
+    {
+        var carryRra = (byte)(carry ? 1 : 0);
+        var result = (byte)((A >> 1) | (carryRra << 7));
 
         zero = false;
         negative = false;
@@ -1972,9 +2031,10 @@ class CPU {
         return 4;
     }
 
-    private int RLC_R(ref byte r) {
-        byte wrap = (byte)(r & 0x80);
-        byte result = (byte)((r << 1) | (wrap >> 7));
+    private int RLC_R(ref byte r)
+    {
+        var wrap = (byte)(r & 0x80);
+        var result = (byte)((r << 1) | (wrap >> 7));
 
         zero = result == 0;
         negative = false;
@@ -1987,11 +2047,12 @@ class CPU {
         return 8;
     }
 
-    private int RLC_AHL() {
-        ushort address = Get16BitReg("hl");
-        byte val = mmu.Read(address);
-        byte wrap = (byte)(val & 0x80);
-        byte result = (byte)((val << 1) | (wrap >> 7));
+    private int RLC_AHL()
+    {
+        var address = Get16BitReg("hl");
+        var val = mmu.Read(address);
+        var wrap = (byte)(val & 0x80);
+        var result = (byte)((val << 1) | (wrap >> 7));
 
         zero = result == 0;
         negative = false;
@@ -2004,9 +2065,10 @@ class CPU {
         return 16;
     }
 
-    private int RRC_R(ref byte r) {
-        byte wrap = (byte)(r & 0x01);
-        byte result = (byte)((r >> 1) | (wrap << 7));
+    private int RRC_R(ref byte r)
+    {
+        var wrap = (byte)(r & 0x01);
+        var result = (byte)((r >> 1) | (wrap << 7));
 
         zero = result == 0;
         negative = false;
@@ -2019,11 +2081,12 @@ class CPU {
         return 8;
     }
 
-    private int RRC_AHL() {
-        ushort address = Get16BitReg("hl");
-        byte val = mmu.Read(address);
-        byte wrap = (byte)(val & 0x01);
-        byte result = (byte)((val >> 1) | (wrap << 7));
+    private int RRC_AHL()
+    {
+        var address = Get16BitReg("hl");
+        var val = mmu.Read(address);
+        var wrap = (byte)(val & 0x01);
+        var result = (byte)((val >> 1) | (wrap << 7));
 
         zero = result == 0;
         negative = false;
@@ -2036,9 +2099,10 @@ class CPU {
         return 16;
     }
 
-    private int RL_R(ref byte r) {
-        byte carryRL = (byte)(carry ? 1 : 0);
-        byte result = (byte)((r << 1) | carryRL);
+    private int RL_R(ref byte r)
+    {
+        var carryRl = (byte)(carry ? 1 : 0);
+        var result = (byte)((r << 1) | carryRl);
 
         zero = result == 0;
         negative = false;
@@ -2051,11 +2115,12 @@ class CPU {
         return 8;
     }
 
-    private int RL_AHL() {
-        ushort address = Get16BitReg("hl");
-        byte val = mmu.Read(address); 
-        byte carryRL = (byte)(carry ? 1 : 0);
-        byte result = (byte)((val << 1) | carryRL);
+    private int RL_AHL()
+    {
+        var address = Get16BitReg("hl");
+        var val = mmu.Read(address);
+        var carryRl = (byte)(carry ? 1 : 0);
+        var result = (byte)((val << 1) | carryRl);
 
         zero = result == 0;
         negative = false;
@@ -2068,9 +2133,10 @@ class CPU {
         return 16;
     }
 
-    private int RR_R(ref byte r) {
-        byte carryRR = (byte)(carry ? 1 : 0);
-        byte result = (byte)((r >> 1) | (carryRR << 7));
+    private int RR_R(ref byte r)
+    {
+        var carryRr = (byte)(carry ? 1 : 0);
+        var result = (byte)((r >> 1) | (carryRr << 7));
 
         zero = result == 0;
         negative = false;
@@ -2083,11 +2149,12 @@ class CPU {
         return 8;
     }
 
-    private int RR_AHL() {
-        ushort address = Get16BitReg("hl");
-        byte val = mmu.Read(address);
-        byte carryRR = (byte)(carry ? 1 : 0);
-        byte result = (byte)((val >> 1) | (carryRR << 7));
+    private int RR_AHL()
+    {
+        var address = Get16BitReg("hl");
+        var val = mmu.Read(address);
+        var carryRr = (byte)(carry ? 1 : 0);
+        var result = (byte)((val >> 1) | (carryRr << 7));
 
         zero = result == 0;
         negative = false;
@@ -2100,9 +2167,10 @@ class CPU {
         return 16;
     }
 
-    private int SLA_R(ref byte r) {
-        byte msb = (byte)(r & 0x80);
-        byte result = (byte)(r << 1);
+    private int SLA_R(ref byte r)
+    {
+        var msb = (byte)(r & 0x80);
+        var result = (byte)(r << 1);
 
         zero = result == 0;
         negative = false;
@@ -2115,11 +2183,12 @@ class CPU {
         return 8;
     }
 
-    private int SLA_AHL() {
-        ushort address = Get16BitReg("hl");
-        byte val = mmu.Read(address);
-        byte msb = (byte)(val & 0x80);
-        byte result = (byte)(val << 1);
+    private int SLA_AHL()
+    {
+        var address = Get16BitReg("hl");
+        var val = mmu.Read(address);
+        var msb = (byte)(val & 0x80);
+        var result = (byte)(val << 1);
 
         zero = result == 0;
         negative = false;
@@ -2132,10 +2201,11 @@ class CPU {
         return 16;
     }
 
-    private int SRA_R(ref byte r) {
-        byte msb = (byte)(r & 0x80);
-        byte lsb = (byte)(r & 0x01);
-        byte result = (byte)((r >> 1) | msb);
+    private int SRA_R(ref byte r)
+    {
+        var msb = (byte)(r & 0x80);
+        var lsb = (byte)(r & 0x01);
+        var result = (byte)((r >> 1) | msb);
 
         zero = result == 0;
         negative = false;
@@ -2148,12 +2218,13 @@ class CPU {
         return 8;
     }
 
-    private int SRA_AHL() {
-        ushort address = Get16BitReg("hl");
-        byte val = mmu.Read(address);
-        byte msb = (byte)(val & 0x80);
-        byte lsb = (byte)(val & 0x01);
-        byte result = (byte)((val >> 1) | msb);
+    private int SRA_AHL()
+    {
+        var address = Get16BitReg("hl");
+        var val = mmu.Read(address);
+        var msb = (byte)(val & 0x80);
+        var lsb = (byte)(val & 0x01);
+        var result = (byte)((val >> 1) | msb);
 
         zero = result == 0;
         negative = false;
@@ -2166,9 +2237,10 @@ class CPU {
         return 16;
     }
 
-    private int SRL_R(ref byte r) {
-        byte lsb = (byte)(r & 0x01);
-        byte result = (byte)(r >> 1);
+    private int SRL_R(ref byte r)
+    {
+        var lsb = (byte)(r & 0x01);
+        var result = (byte)(r >> 1);
 
         zero = result == 0;
         negative = false;
@@ -2177,15 +2249,16 @@ class CPU {
         UpdateFFromFlags();
 
         r = result;
-        
+
         return 8;
     }
 
-    private int SRL_AHL() {
-        ushort address = Get16BitReg("hl");
-        byte val = mmu.Read(address);
-        byte lsb = (byte)(val & 0x01);
-        byte result = (byte)(val >> 1);
+    private int SRL_AHL()
+    {
+        var address = Get16BitReg("hl");
+        var val = mmu.Read(address);
+        var lsb = (byte)(val & 0x01);
+        var result = (byte)(val >> 1);
 
         zero = result == 0;
         negative = false;
@@ -2194,14 +2267,15 @@ class CPU {
         UpdateFFromFlags();
 
         mmu.Write(address, result);
-        
+
         return 16;
     }
 
-    private int SWAP_R(ref byte r) {
-        byte upper = (byte)(r & 0xF0);
-        byte lower = (byte)(r & 0x0F);
-        byte result = (byte)((lower << 4) | (upper >> 4));
+    private int SWAP_R(ref byte r)
+    {
+        var upper = (byte)(r & 0xF0);
+        var lower = (byte)(r & 0x0F);
+        var result = (byte)((lower << 4) | (upper >> 4));
 
         zero = result == 0;
         negative = false;
@@ -2214,12 +2288,13 @@ class CPU {
         return 8;
     }
 
-    private int SWAP_AHL() {
-        ushort address = Get16BitReg("hl");
-        byte val = mmu.Read(address);
-        byte upper = (byte)(val & 0xF0);
-        byte lower = (byte)(val & 0x0F);
-        byte result = (byte)((lower << 4) | (upper >> 4));
+    private int SWAP_AHL()
+    {
+        var address = Get16BitReg("hl");
+        var val = mmu.Read(address);
+        var upper = (byte)(val & 0xF0);
+        var lower = (byte)(val & 0x0F);
+        var result = (byte)((lower << 4) | (upper >> 4));
 
         zero = result == 0;
         negative = false;
@@ -2232,10 +2307,11 @@ class CPU {
         return 16;
     }
 
-    private int BIT_N_R(byte n, ref byte r) {
-        byte bitTest = (byte)(r & (1 << n));
+    private int BIT_N_R(byte n, ref byte r)
+    {
+        var bitTest = (byte)(r & (1 << n));
 
-        zero = bitTest == 0;   
+        zero = bitTest == 0;
         negative = false;
         halfCarry = true;
         UpdateFFromFlags();
@@ -2243,12 +2319,13 @@ class CPU {
         return 8;
     }
 
-    private int BIT_N_AHL(byte n) {
-        ushort address = Get16BitReg("hl");
-        byte val = mmu.Read(address);
-        byte bitTest = (byte)(val & (1 << n));
+    private int BIT_N_AHL(byte n)
+    {
+        var address = Get16BitReg("hl");
+        var val = mmu.Read(address);
+        var bitTest = (byte)(val & (1 << n));
 
-        zero = bitTest == 0;   
+        zero = bitTest == 0;
         negative = false;
         halfCarry = true;
         UpdateFFromFlags();
@@ -2256,187 +2333,211 @@ class CPU {
         return 12;
     }
 
-    private int RES_N_R(byte n, ref byte r) {
-        byte mask = (byte)~(1 << n);
+    private static int RES_N_R(byte n, ref byte r)
+    {
+        var mask = (byte)~(1 << n);
         r &= mask;
-        
+
         return 8;
     }
 
-    private int RES_N_AHL(byte n) {
-        ushort address = Get16BitReg("hl");
-        byte val = mmu.Read(address);
-        byte mask = (byte)~(1 << n);
+    private int RES_N_AHL(byte n)
+    {
+        var address = Get16BitReg("hl");
+        var val = mmu.Read(address);
+        var mask = (byte)~(1 << n);
         val &= mask;
 
         mmu.Write(address, val);
-        
+
         return 16;
     }
 
-    private int SET_N_R(byte n, ref byte r) {
-        byte mask = (byte)(1 << n);
+    private static int SET_N_R(byte n, ref byte r)
+    {
+        var mask = (byte)(1 << n);
         r |= mask;
-        
+
         return 8;
     }
 
-    private int SET_N_AHL(byte n) {
-        ushort address = Get16BitReg("hl");
-        byte val = mmu.Read(address);
-        byte mask = (byte)(1 << n);
+    private int SET_N_AHL(byte n)
+    {
+        var address = Get16BitReg("hl");
+        var val = mmu.Read(address);
+        var mask = (byte)(1 << n);
         val |= mask;
 
         mmu.Write(address, val);
-        
+
         return 16;
     }
 
     //control
-    private int JR_CON_I8(bool flag) {
-        byte rel = Fetch();
+    private int JR_CON_I8(bool flag)
+    {
+        var rel = Fetch();
 
-        if (flag) {
-            sbyte offset = (sbyte)rel;
-            PC = (ushort)(PC + offset);
+        if (flag)
+        {
+            var offset = (sbyte)rel;
+            Pc = (ushort)(Pc + offset);
             return 12;
-        } else {
-            return 8;
         }
+
+        return 8;
     }
 
-    private int CALL_U16() {
-        byte lower = Fetch();
-        byte upper = Fetch();
-        ushort address = (ushort)((upper << 8) | lower);
+    private int CALL_U16()
+    {
+        var lower = Fetch();
+        var upper = Fetch();
+        var address = (ushort)((upper << 8) | lower);
 
-        ushort returnAddress = (ushort)(PC);
-        SP--; 
-        mmu.Write(SP, (byte)(returnAddress >> 8));
-        SP--; 
-        mmu.Write(SP, (byte)(returnAddress & 0xFF));
+        var returnAddress = Pc;
+        Sp--;
+        mmu.Write(Sp, (byte)(returnAddress >> 8));
+        Sp--;
+        mmu.Write(Sp, (byte)(returnAddress & 0xFF));
 
-        PC = address;
+        Pc = address;
         return 24;
     }
 
-    private int CALL_CON_U16(bool flag) {
-        byte lower = Fetch();
-        byte upper = Fetch();
-        ushort address = (ushort)((upper << 8) | lower);
+    private int CALL_CON_U16(bool flag)
+    {
+        var lower = Fetch();
+        var upper = Fetch();
+        var address = (ushort)((upper << 8) | lower);
 
-        if (flag) {
-            ushort returnAddress = (ushort)(PC);
-            SP--; 
-            mmu.Write(SP, (byte)(returnAddress >> 8));
-            SP--; 
-            mmu.Write(SP, (byte)(returnAddress & 0xFF));
+        if (flag)
+        {
+            var returnAddress = Pc;
+            Sp--;
+            mmu.Write(Sp, (byte)(returnAddress >> 8));
+            Sp--;
+            mmu.Write(Sp, (byte)(returnAddress & 0xFF));
 
-            PC = address;
+            Pc = address;
             return 24;
-        } else {
-            return 12;
         }
+
+        return 12;
     }
 
-    private int RET() {
-        byte lowByte = mmu.Read(SP);
-        SP++;
-        byte highByte = mmu.Read(SP);
-        SP++;
+    private int Ret()
+    {
+        var lowByte = mmu.Read(Sp);
+        Sp++;
+        var highByte = mmu.Read(Sp);
+        Sp++;
 
-        ushort returnAddress = (ushort)((highByte << 8) | lowByte);
+        var returnAddress = (ushort)((highByte << 8) | lowByte);
 
-        PC = returnAddress;
+        Pc = returnAddress;
         return 16;
     }
 
-    private int RET_CON(bool flag) {
-        if (flag) {
-            byte lowByte = mmu.Read(SP);
-            SP++;
-            byte highByte = mmu.Read(SP);
-            SP++;
+    private int RET_CON(bool flag)
+    {
+        if (flag)
+        {
+            var lowByte = mmu.Read(Sp);
+            Sp++;
+            var highByte = mmu.Read(Sp);
+            Sp++;
 
-            ushort returnAddress = (ushort)((highByte << 8) | lowByte);
+            var returnAddress = (ushort)((highByte << 8) | lowByte);
 
-            PC = returnAddress;
+            Pc = returnAddress;
             return 20;
-        } else {
-            return 8;
         }
+
+        return 8;
     }
 
-    private int RETI() {
-        IME = true;
+    private int Reti()
+    {
+        ime = true;
 
-        byte lowByte = mmu.Read(SP);
-        SP++;
-        byte highByte = mmu.Read(SP);
-        SP++;
+        var lowByte = mmu.Read(Sp);
+        Sp++;
+        var highByte = mmu.Read(Sp);
+        Sp++;
 
-        ushort returnAddress = (ushort)((highByte << 8) | lowByte);
+        var returnAddress = (ushort)((highByte << 8) | lowByte);
 
-        PC = returnAddress;
+        Pc = returnAddress;
         return 16;
     }
 
-    private int JP_CON_U16(bool flag) {
-        byte lower = Fetch();
-        byte upper = Fetch();
-        ushort address = (ushort)((upper << 8) | lower);
+    private int JP_CON_U16(bool flag)
+    {
+        var lower = Fetch();
+        var upper = Fetch();
+        var address = (ushort)((upper << 8) | lower);
 
-        if (flag) {
-            PC = address;
+        if (flag)
+        {
+            Pc = address;
             return 16;
-        } else {
-            return 12;
         }
+
+        return 12;
     }
 
-    private int JP_HL() {
-        ushort address = Get16BitReg("hl");
-        PC = address;
+    private int JP_HL()
+    {
+        var address = Get16BitReg("hl");
+        Pc = address;
         return 4;
     }
 
-    private int RST(ushort vector) {
-        ushort returnAddress = (ushort)(PC);
-        SP--; 
-        mmu.Write(SP, (byte)(returnAddress >> 8));
-        SP--; 
-        mmu.Write(SP, (byte)(returnAddress & 0xFF));
+    private int Rst(ushort vector)
+    {
+        var returnAddress = Pc;
+        Sp--;
+        mmu.Write(Sp, (byte)(returnAddress >> 8));
+        Sp--;
+        mmu.Write(Sp, (byte)(returnAddress & 0xFF));
 
-        PC = vector;
+        Pc = vector;
         return 16;
     }
 
     //misc
-    private int NOP() {
+    private static int Nop()
+    {
         return 4;
     }
 
-    private int DI() {
-        IME = false;
+    private int Di()
+    {
+        ime = false;
         return 4;
     }
 
-    private int EI() {
-        IME = true;
+    private int Ei()
+    {
+        ime = true;
         return 4;
     }
 
-    private int HALT() {
+    private int Halt()
+    {
         halted = true;
         return 4;
     }
 
-    private int STOP() {
+    private static int Stop()
+    {
         return 4;
     }
 
-    private int DMG_EXIT(byte op) {
-        Console.WriteLine("Unimplemented Opcode: " + op.ToString("X2") + " , PC: " + (PC-1).ToString("X4") + " (In opcode switch)");
+    private int DMG_EXIT(byte op)
+    {
+        Console.WriteLine("Unimplemented Opcode: " + op.ToString("X2") + " , PC: " + (Pc - 1).ToString("X4") +
+                          " (In opcode switch)");
         Environment.Exit(1);
         return 0;
     }
